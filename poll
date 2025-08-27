@@ -1,0 +1,240 @@
+// import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
+
+// /** ---------- Types ---------- */
+// export interface Poll {
+//   id: string;
+//   question: string;
+//   options: string[];
+//   durationSec: number;
+// }
+
+// export const DEMO_POLLS: Poll[] = [
+//   {
+//     id: "p1",
+//     question: "Which feature do you want next?",
+//     options: [
+//       "Dark mode improvements",
+//       "Analytics dashboard",
+//       "Faster results",
+//     ],
+//     durationSec: 15,
+//   },
+//   {
+//     id: "p2",
+//     question: "How likely are you to recommend us?",
+//     options: ["Very likely", "Somewhat", "Not likely"],
+//     durationSec: 12,
+//   },
+//   {
+//     id: "p3",
+//     question: "Rate today’s experience",
+//     options: ["Awesome", "Okay", "Needs work"],
+//     durationSec: 10,
+//   },
+// ];
+
+// const clamp = (n: number, min: number, max: number) =>
+//   Math.min(max, Math.max(min, n));
+
+// export type SwipeDir = "left" | "right";
+// export type SwipeHandle = { swipe: (dir: SwipeDir) => void };
+
+// function isInteractiveTarget(el: EventTarget | null) {
+//   if (!(el instanceof HTMLElement)) return false;
+//   return !!el.closest("[data-no-drag]");
+// }
+
+// interface SwipeableCardProps {
+//   children: React.ReactNode;
+//   onSwiped: (dir: SwipeDir) => void;
+//   disabled?: boolean;
+//   restoreFrom?: SwipeDir | null;
+//   onRestoreEnd?: () => void;
+//   externalRef?: React.Ref<SwipeHandle>;
+// }
+
+// export function SwipeableCard({
+//   children,
+//   onSwiped,
+//   disabled,
+//   restoreFrom = null,
+//   onRestoreEnd,
+//   externalRef,
+// }: SwipeableCardProps) {
+//   const startX = useRef(0);
+//   const dx = useRef(0);
+//   const dragging = useRef(false);
+//   const [style, setStyle] = useState<React.CSSProperties>({});
+//   const [animating, setAnimating] = useState(false);
+
+//   const doSwipe = (dir: SwipeDir) => {
+//     if (animating) return;
+//     setAnimating(true);
+//     const sendX =
+//       dir === "right" ? window.innerWidth * 1.1 : -window.innerWidth * 1.1;
+//     const sendRot = dir === "right" ? 24 : -24;
+//     setStyle({
+//       transform: `translate3d(${sendX}px,0,0) rotate(${sendRot}deg)`,
+//       transition: "transform 280ms ease-out",
+//     });
+//     window.setTimeout(() => {
+//       setAnimating(false);
+//       setStyle({});
+//       onSwiped(dir);
+//     }, 300);
+//   };
+
+//   useImperativeHandle(externalRef, () => ({ swipe: doSwipe }), [animating]);
+
+//   // restore/bounce
+//   useEffect(() => {
+//     if (!restoreFrom) return;
+//     const fromX =
+//       restoreFrom === "right"
+//         ? window.innerWidth * 1.1
+//         : -window.innerWidth * 1.1;
+//     const fromRot = restoreFrom === "right" ? 24 : -24;
+
+//     setAnimating(true);
+//     setStyle({
+//       transform: `translate3d(${fromX}px,0,0) rotate(${fromRot}deg)`,
+//       transition: "none",
+//     });
+
+//     const id = requestAnimationFrame(() => {
+//       requestAnimationFrame(() => {
+//         setStyle({
+//           transform: "translate3d(0px,0,0) rotate(0deg)",
+//           transition: "transform 280ms ease-out",
+//         });
+//         window.setTimeout(() => {
+//           setAnimating(false);
+//           setStyle({});
+//           onRestoreEnd?.();
+//         }, 300);
+//       });
+//     });
+//     return () => cancelAnimationFrame(id);
+//   }, [restoreFrom, onRestoreEnd]);
+
+//   const onDown = (e: React.PointerEvent) => {
+//     if (disabled || animating) return;
+//     if (isInteractiveTarget(e.target)) return;
+//     dragging.current = true;
+//     startX.current = e.clientX;
+//     dx.current = 0;
+//     (e.target as Element).setPointerCapture?.(e.pointerId);
+//     setStyle({ transition: "none" });
+//   };
+
+//   const onMove = (e: React.PointerEvent) => {
+//     if (!dragging.current || disabled || animating) return;
+//     dx.current = e.clientX - startX.current;
+//     const rotate = clamp(dx.current / 12, -18, 18);
+//     setStyle({
+//       transform: `translate3d(${dx.current}px,0,0) rotate(${rotate}deg)`,
+//       transition: "none",
+//     });
+//   };
+
+//   const onUp = () => {
+//     if (!dragging.current) return;
+//     dragging.current = false;
+
+//     const threshold = Math.min(140, window.innerWidth * 0.28);
+//     if (Math.abs(dx.current) > threshold) {
+//       doSwipe(dx.current > 0 ? "right" : "left");
+//     } else {
+//       setStyle({
+//         transform: "translate3d(0px,0,0) rotate(0deg)",
+//         transition: "transform 200ms ease",
+//       });
+//       window.setTimeout(() => setStyle({}), 220);
+//     }
+//   };
+
+//   return (
+//     <div
+//       role="region"
+//       aria-roledescription="tinder-card"
+//       onPointerDown={onDown}
+//       onPointerMove={onMove}
+//       onPointerUp={onUp}
+//       onPointerCancel={onUp}
+//       className="absolute inset-0 will-change-transform cursor-grab active:cursor-grabbing"
+//       style={{ ...style, touchAction: "pan-y" }}
+//     >
+//       {children}
+//     </div>
+//   );
+// }
+
+// export function PollCard({
+//   poll,
+//   indexFromTop,
+//   displayIndex,
+//   total,
+//   onOptionClick,
+//   selectedIndex,
+//   optionsLocked,
+// }: {
+//   poll: Poll;
+//   indexFromTop: number;
+//   displayIndex: number;
+//   total: number;
+//   onOptionClick?: (i: number) => void;
+//   selectedIndex?: number | null;
+//   optionsLocked?: boolean;
+// }) {
+//   const scale = 1 - Math.min(0.04 * indexFromTop, 0.12);
+//   const translateY = 6 * indexFromTop;
+
+//   return (
+//     <div
+//       className="absolute inset-0 rounded-2xl bg-neutral-900 text-white shadow-2xl border border-white/10 overflow-hidden"
+//       style={{
+//         transform: `translateY(${translateY}px) scale(${scale})`,
+//         transition: "transform 220ms ease",
+//       }}
+//     >
+//       <div className="p-5 flex flex-col h-full">
+//         <div className="flex items-center justify-between gap-3">
+//           <span className="text-xs uppercase tracking-widest text-white/60">
+//             Poll {displayIndex} / {total}
+//           </span>
+//         </div>
+
+//         <h2 className="text-xl sm:text-2xl font-semibold mt-3 leading-snug">
+//           {poll.question}
+//         </h2>
+
+//         <div className="mt-5 grid gap-2">
+//           {poll.options.map((opt, i) => {
+//             const active = selectedIndex === i;
+//             return (
+//               <button
+//                 key={i}
+//                 data-no-drag
+//                 disabled={optionsLocked}
+//                 onClick={() => onOptionClick?.(i)}
+//                 className={[
+//                   "w-full rounded-xl border py-3 px-4 text-left transition",
+//                   active
+//                     ? "border-emerald-400/70 bg-emerald-400/10"
+//                     : "border-white/15 bg-white/5 hover:bg-white/10 active:bg-white/20",
+//                   optionsLocked ? "opacity-60 cursor-not-allowed" : "",
+//                 ].join(" ")}
+//               >
+//                 {opt}
+//               </button>
+//             );
+//           })}
+//         </div>
+
+//         <div className="mt-auto pt-6 text-[11px] text-white/50">
+//           Swipe right/left • Tap an option to vote
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
